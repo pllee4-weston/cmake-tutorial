@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - release
+  pull_request:
+    branches:
+      - release
+  workflow_run:
+    workflows: ["Build and Pack"]
+    branches:
+      - release
+    types: 
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v2
+      - name: Download artifacts
+        run: export DEB_PKG=$(find . -type f -name "cmake_template_*.deb" -exec basename {} \;)
+      - uses: retgits/actions/jfrog-cli@master
+      - name: Release
+        shell: bash
+        run: curl -u ${{secrets.ARTIFACTORY_USER}}:${{secrets.ARTIFACTORY_KEY}} -T ./${DEB_PKG} "${{secrets.ARTIFACTORY_URL}}/package"
+
